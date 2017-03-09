@@ -5,3 +5,5 @@ This repository contains the demonstration files for a talk given at Durham Univ
 
 heat.f90 -- FORTRAN 90 version of demo program.
 heat.cpp -- C++ version of demo program.
+
+heat_plot.m -- simple Matlab script for plotting output from the above.
