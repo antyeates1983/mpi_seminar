@@ -9,7 +9,7 @@
 using namespace std;
 
 int main(){
-    static const int nx=2048;
+    static const int nx=64;
     static const double k=1.0, tMax=0.1;
     int i;
     
@@ -46,7 +46,7 @@ int main(){
     if((nx % nProcs) > 0){
         if(myRank==0){
             printf("%d grid points don't divide evenly into %d processes\n", nx, nProcs);
-            return 0;
+            MPI_Abort(comm, 0);
             }
         }
     int nxLocal = nx/nProcs;
@@ -64,13 +64,13 @@ int main(){
     
     // - Distribute chunks of coordinate array to each process:
     double x[nxLocal];
-    MPI_Scatter(xGlob, nxLocal, MPI_DOUBLE, x, nxLocal, MPI_DOUBLE, 0, comm);
+    MPI_Scatter(&xGlob, nxLocal, MPI_DOUBLE, &x, nxLocal, MPI_DOUBLE, 0, comm);
     /*printf("%d %g %g\n",myRank,x[0],x[nxLocal-1]);*/
     
     // - Define initial condition function (locally for each process):
     double g[nxLocal];
     for(i=0; i<nxLocal; i++){
-        g[i] = exp(-10.0*x[i]*x[i]);
+        g[i] = exp(-100.0*x[i]*x[i]);
         }
     
     // - Set timestep (for stability):
@@ -94,7 +94,7 @@ int main(){
     
     double t = 0.0;
     double uav, uavGlob;
-    while(t < tMax){
+    while(t < dt){
         // - Enforce global boundary conditions:
         if(prvRank==MPI_PROC_NULL) u[0] = u[2];
         if(nxtRank==MPI_PROC_NULL) u[nxLocal+1] = u[nxLocal-1];
@@ -102,7 +102,10 @@ int main(){
         // - Communicate ghost values of u:
         // -- send to left:
         if(prvRank!=MPI_PROC_NULL) MPI_Send(&u[1], 1, MPI_DOUBLE, prvRank, 13, comm);
-        if(nxtRank!=MPI_PROC_NULL) MPI_Recv(&u[nxLocal+1], 1, MPI_DOUBLE, nxtRank, 13, comm, MPI_STATUS_IGNORE);
+        if(nxtRank!=MPI_PROC_NULL){
+            MPI_Recv(&u[nxLocal+1], 1, MPI_DOUBLE, nxtRank, 13, comm, MPI_STATUS_IGNORE);
+            /*printf("%i received from %i\n",myRank,nxtRank);*/
+            }
         // -- send to right:
         if(nxtRank!=MPI_PROC_NULL) MPI_Send(&u[nxLocal], 1, MPI_DOUBLE, nxtRank, 13, comm);
         if(prvRank!=MPI_PROC_NULL) MPI_Recv(&u[0], 1, MPI_DOUBLE, prvRank, 13, comm, MPI_STATUS_IGNORE);

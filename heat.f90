@@ -43,7 +43,7 @@ program heat
     ! - Check that grid divides evenly between processes:
     if (mod(nx, nProcs)>0) then
         if (myRank==0) print*,nx," grid points don't divide evenly among",nProcs,"processors"
-        stop
+        CALL mpi_abort(comm, 0, ierr)
     end if
     nxLocal = nx/nProcs
     dx = 2.0_d/(real(nx,d) - 1.0_d)
@@ -62,7 +62,7 @@ program heat
 
     ! - define initial condition function (locally for each process):
     allocate(g(1:nxLocal))
-    g = exp(-10.0_d*x**2)
+    g = exp(-100.0_d*x**2)
 !    print*,g
 
     ! - Set timestep (for stability):
@@ -88,7 +88,10 @@ program heat
         ! - Communicate ghost values of u:
         ! -- send to left:
         if (prvRank/=MPI_PROC_NULL) call mpi_send(u(1), 1, MPI_DOUBLE_PRECISION, prvRank, 13, comm, ierr)
-        if (nxtRank/=MPI_PROC_NULL) call mpi_recv(u(nxLocal+1), 1, MPI_DOUBLE_PRECISION, nxtRank, 13, comm, MPI_STATUS_IGNORE, ierr)
+        if (nxtRank/=MPI_PROC_NULL) then
+            call mpi_recv(u(nxLocal+1), 1, MPI_DOUBLE_PRECISION, nxtRank, 13, comm, MPI_STATUS_IGNORE, ierr)
+            !print*,myRank,' received from ',nxtRank
+        end if
         ! -- send to right:
         if (nxtRank/=MPI_PROC_NULL) call mpi_send(u(nxLocal), 1, MPI_DOUBLE_PRECISION, nxtRank, 13, comm, ierr)
         if (prvRank/=MPI_PROC_NULL) call mpi_recv(u(0), 1, MPI_DOUBLE_PRECISION, prvRank, 13, comm,  MPI_STATUS_IGNORE, ierr)
