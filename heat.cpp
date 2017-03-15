@@ -64,7 +64,7 @@ int main(){
     
     // - Distribute chunks of coordinate array to each process:
     double x[nxLocal];
-    MPI_Scatter(&xGlob, nxLocal, MPI_DOUBLE, &x, nxLocal, MPI_DOUBLE, 0, comm);
+    MPI_Scatter(xGlob, nxLocal, MPI_DOUBLE, &x, nxLocal, MPI_DOUBLE, 0, comm);
     /*printf("%d %g %g\n",myRank,x[0],x[nxLocal-1]);*/
     
     // - Define initial condition function (locally for each process):
@@ -94,7 +94,7 @@ int main(){
     
     double t = 0.0;
     double uav, uavGlob;
-    while(t < dt){
+    while(t < tMax){
         // - Enforce global boundary conditions:
         if(prvRank==MPI_PROC_NULL) u[0] = u[2];
         if(nxtRank==MPI_PROC_NULL) u[nxLocal+1] = u[nxLocal-1];
@@ -146,7 +146,7 @@ int main(){
         }
     double* uGlob;
     if(myRank==0) uGlob = new double[nx];
-    MPI_Gather(uInterior, nxLocal, MPI_DOUBLE, uGlob, nxLocal, MPI_DOUBLE, 0, comm);
+    MPI_Gather(&uInterior, nxLocal, MPI_DOUBLE, uGlob, nxLocal, MPI_DOUBLE, 0, comm);
     
     // - Save to file:
     if(myRank==0){
